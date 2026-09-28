@@ -8,6 +8,8 @@ let
     ./fixtures/TOOL.md
   ];
 
+  rule = ./fixtures/RULE.md;
+
   resolved = core.resolveTargets {
     fragments = common;
     targets = {
@@ -96,6 +98,44 @@ in
         dest = ".claude/CLAUDE.md";
       };
     }
+  );
+
+  core-trims-front-matter-and-h1 = mkCheck "core-trims-front-matter-and-h1" (
+    core.compose [
+      {
+        path = rule;
+        trimFrontMatter = true;
+        trimH1 = true;
+      }
+    ] == "## Rule body\n"
+  );
+
+  core-trims-front-matter-only = mkCheck "core-trims-front-matter-only" (
+    core.compose [
+      {
+        path = rule;
+        trimFrontMatter = true;
+      }
+    ] == "# Rule\n\n## Rule body\n"
+  );
+
+  core-trims-h1-after-front-matter = mkCheck "core-trims-h1-after-front-matter" (
+    core.compose [
+      {
+        path = rule;
+        trimH1 = true;
+      }
+    ] == "---\npaths: \"*.nix\"\n---\n\n## Rule body\n"
+  );
+
+  # 先頭が H2 なら何も消さない。
+  core-trim-h1-keeps-other-headings = mkCheck "core-trim-h1-keeps-other-headings" (
+    core.compose [
+      {
+        path = ./fixtures/TOOL.md;
+        trimH1 = true;
+      }
+    ] == "## Tool\n"
   );
 
   # 断片の前後の空行を除き、断片の間は空行 1 つにそろえる。

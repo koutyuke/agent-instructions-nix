@@ -22,6 +22,29 @@ let
   errors = core.checkTargets resolved;
   bundle = core.mkBundle (args // { inherit pkgs; });
 
+  fragmentType = types.coercedTo types.path (path: { inherit path; }) (
+    types.submodule {
+      options = {
+        path = mkOption {
+          type = types.path;
+          description = "Markdown file to read.";
+        };
+
+        trimFrontMatter = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Whether to remove a leading `---` front matter block.";
+        };
+
+        trimH1 = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Whether to remove an H1 that comes first after the front matter.";
+        };
+      };
+    }
+  );
+
   targetModule =
     { name, ... }:
     {
@@ -36,7 +59,7 @@ let
         };
 
         fragments = mkOption {
-          type = types.listOf types.path;
+          type = types.listOf fragmentType;
           default = [ ];
           description = "Fragments appended after the common fragments for this target.";
         };
@@ -54,10 +77,15 @@ in
     enable = lib.mkEnableOption "declarative global instructions for AI coding agents";
 
     fragments = mkOption {
-      type = types.listOf types.path;
+      type = types.listOf fragmentType;
       default = [ ];
-      example = lib.literalExpression "[ ./instructions/COMMON.md ]";
-      description = "Markdown fragments shared by every target, concatenated in order.";
+      example = lib.literalExpression ''
+        [
+          ./instructions/COMMON.md
+          { path = ./rules/nix.md; trimFrontMatter = true; trimH1 = true; }
+        ]
+      '';
+      description = "Markdown fragments shared by every target, concatenated in order. A path or `{ path; trimFrontMatter; trimH1; }`.";
     };
 
     targets = mkOption {

@@ -82,20 +82,25 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 
 断片は、前後の空行を取り除いたうえで、空行 1 つを挟んでつなげます。生成物は改行 1 つで終わります。見出しの階層はそのまま残るので、H1 は先頭の断片だけに置き、ほかの断片は `##` から書くと生成物の構造が崩れません。
 
+断片は path のほか、`{ path; trimFrontMatter; trimH1; }` の形でも指定できます。ほかの用途で書いた Markdown を、見出しや front matter ごと流用するときに使います。
+
+- `trimFrontMatter = true`: 1 行目の `---` から次の `---` までを取り除く
+- `trimH1 = true`: front matter と空行のあとの最初の行が `# ` で始まる H1 なら取り除く。本文の途中にある H1 は残す
+
 断片のファイル名を `CLAUDE.md` や `AGENTS.md` にするのは避けてください。そのディレクトリで作業するエージェントが、プロジェクトの指示として読み込んでしまいます。macOS の既定のファイルシステムは大文字と小文字を区別しないので、`claude.md` でも同じことが起きます。
 
 ## オプション
 
 Home Manager では `programs.agent-instructions` の下に、コアでは引数として同じ名前で渡します。`enable` は Home Manager だけのオプションです。
 
-| オプション                     | 型           | 既定値       | 説明                                                         |
-| ------------------------------ | ------------ | ------------ | ------------------------------------------------------------ |
-| `enable`                       | bool         | `false`      | モジュールを有効にする                                       |
-| `fragments`                    | list of path | `[ ]`        | 全ターゲットで共通の断片                                     |
-| `targets.<name>.enable`        | bool         | `false`      | このターゲットに書き込む                                     |
-| `targets.<name>.dest`          | string       | 組み込みの値 | `$HOME` からの相対パス。組み込みのターゲットでも上書きできる |
-| `targets.<name>.fragments`     | list of path | `[ ]`        | 共通の断片のあとに追加する断片                               |
-| `targets.<name>.inheritCommon` | bool         | `true`       | `false` にすると共通の断片を使わない                         |
+| オプション                     | 型                      | 既定値       | 説明                                                         |
+| ------------------------------ | ----------------------- | ------------ | ------------------------------------------------------------ |
+| `enable`                       | bool                    | `false`      | モジュールを有効にする                                       |
+| `fragments`                    | list of (path or attrs) | `[ ]`        | 全ターゲットで共通の断片                                     |
+| `targets.<name>.enable`        | bool                    | `false`      | このターゲットに書き込む                                     |
+| `targets.<name>.dest`          | string                  | 組み込みの値 | `$HOME` からの相対パス。組み込みのターゲットでも上書きできる |
+| `targets.<name>.fragments`     | list of (path or attrs) | `[ ]`        | 共通の断片のあとに追加する断片                               |
+| `targets.<name>.inheritCommon` | bool                    | `true`       | `false` にすると共通の断片を使わない                         |
 
 次の場合はエラーになります。Home Manager では assertion として、`mkBundle` では throw として報告します。
 
