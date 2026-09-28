@@ -6,10 +6,10 @@
 
 ## 構成
 
-| 層 | 場所 | 依存 | 役割 |
-| -- | ---- | ---- | ---- |
-| コア | `lib/`（flake の `lib` 出力） | nixpkgs だけ | ターゲットの解決、検証、断片の結合、ターゲットごとの本文をまとめたパッケージ（バンドル）の生成 |
-| Home Manager の対応層 | `modules/home-manager.nix`（`homeManagerModules.default`） | Home Manager | オプションをコアに渡し、バンドルのファイルを `home.file` でリンクする |
+| 層                    | 場所                                                       | 依存         | 役割                                                                                           |
+| --------------------- | ---------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| コア                  | `lib/`（flake の `lib` 出力）                              | nixpkgs だけ | ターゲットの解決、検証、断片の結合、ターゲットごとの本文をまとめたパッケージ（バンドル）の生成 |
+| Home Manager の対応層 | `modules/home-manager.nix`（`homeManagerModules.default`） | Home Manager | オプションをコアに渡し、バンドルのファイルを `home.file` でリンクする                          |
 
 flake の input は nixpkgs だけです。Home Manager の対応層は、利用者の Home Manager に読み込まれて動くので、この flake は Home Manager に依存しません。
 
@@ -68,13 +68,13 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 # => $out/claude.md
 ```
 
-| 関数 | 説明 |
-| ---- | ---- |
-| `mkBundle { pkgs, fragments, targets, name? }` | バンドルを作る。設定に誤りがあれば throw する |
-| `resolveTargets { fragments, targets }` | 有効なターゲットを `{ <name> = { dest; fragments; }; }` に解決する |
-| `checkTargets resolved` | 解決結果のエラーメッセージの一覧を返す。問題なければ空 |
-| `compose fragments` | 断片をつなげた文字列を返す |
-| `defaultTargets` | 組み込みのターゲットと既定の `dest` |
+| 関数                                           | 説明                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------ |
+| `mkBundle { pkgs, fragments, targets, name? }` | バンドルを作る。設定に誤りがあれば throw する                      |
+| `resolveTargets { fragments, targets }`        | 有効なターゲットを `{ <name> = { dest; fragments; }; }` に解決する |
+| `checkTargets resolved`                        | 解決結果のエラーメッセージの一覧を返す。問題なければ空             |
+| `compose fragments`                            | 断片をつなげた文字列を返す                                         |
+| `defaultTargets`                               | 組み込みのターゲットと既定の `dest`                                |
 
 結合済みの本文は、一つのバンドルの直下に `{agent}.md` として生成します。たとえば `/nix/store/<hash>-agent-instructions/` に `codex.md` と `claude.md` が並びます。Home Manager は、各 `dest` からバンドル内の対応するファイルへリンクします。`dest` を変更しても、バンドル内のファイル名は変わりません。
 
@@ -108,19 +108,19 @@ Home Manager では `programs.agent-instructions` の下に、コアでは引数
 
 公式ドキュメントで、ユーザー単位のグローバル指示ファイルを確認できたツールだけを載せています（2026-09-28 時点）。
 
-| 名前       | `dest`                                        | 競合する Home Manager のオプション     | 出典 |
-| ---------- | --------------------------------------------- | -------------------------------------- | ---- |
-| `amp`      | `.config/amp/AGENTS.md`                       | -                                      | [Amp](https://ampcode.com/docs/customize/agents-md) |
-| `claude`   | `.claude/CLAUDE.md`                           | `programs.claude-code.context`         | [Claude Code](https://code.claude.com/docs/en/memory) |
-| `codex`    | `.codex/AGENTS.md`                            | `programs.codex.context`               | [Codex](https://developers.openai.com/codex/guides/agents-md) |
-| `copilot`  | `.copilot/copilot-instructions.md`            | `programs.github-copilot-cli.context`  | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/add-custom-instructions) |
-| `crush`    | `.config/crush/CRUSH.md`                      | -                                      | [Crush](https://github.com/charmbracelet/crush/blob/main/README.md) |
-| `gemini`   | `.gemini/GEMINI.md`                           | -                                      | [Gemini CLI](https://geminicli.com/docs/cli/gemini-md/) |
-| `goose`    | `.config/goose/.goosehints`                   | -                                      | [goose](https://goose-docs.ai/docs/guides/context-engineering/using-goosehints/) |
-| `kiro`     | `.kiro/steering/AGENTS.md`                    | -                                      | [Kiro](https://kiro.dev/docs/steering/) |
-| `opencode` | `.config/opencode/AGENTS.md`                  | `programs.opencode.context`            | [opencode](https://opencode.ai/docs/rules/) |
-| `pi`       | `.pi/agent/AGENTS.md`                         | `programs.pi-coding-agent.context`     | [pi](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/configuration.md) |
-| `windsurf` | `.codeium/windsurf/memories/global_rules.md`  | -                                      | [Windsurf](https://docs.devin.ai/desktop/cascade/memories) |
+| 名前       | `dest`                                       | 競合する Home Manager のオプション    | 出典                                                                                                 |
+| ---------- | -------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `amp`      | `.config/amp/AGENTS.md`                      | -                                     | [Amp](https://ampcode.com/docs/customize/agents-md)                                                  |
+| `claude`   | `.claude/CLAUDE.md`                          | `programs.claude-code.context`        | [Claude Code](https://code.claude.com/docs/en/memory)                                                |
+| `codex`    | `.codex/AGENTS.md`                           | `programs.codex.context`              | [Codex](https://developers.openai.com/codex/guides/agents-md)                                        |
+| `copilot`  | `.copilot/copilot-instructions.md`           | `programs.github-copilot-cli.context` | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/add-custom-instructions) |
+| `crush`    | `.config/crush/CRUSH.md`                     | -                                     | [Crush](https://github.com/charmbracelet/crush/blob/main/README.md)                                  |
+| `gemini`   | `.gemini/GEMINI.md`                          | -                                     | [Gemini CLI](https://geminicli.com/docs/cli/gemini-md/)                                              |
+| `goose`    | `.config/goose/.goosehints`                  | -                                     | [goose](https://goose-docs.ai/docs/guides/context-engineering/using-goosehints/)                     |
+| `kiro`     | `.kiro/steering/AGENTS.md`                   | -                                     | [Kiro](https://kiro.dev/docs/steering/)                                                              |
+| `opencode` | `.config/opencode/AGENTS.md`                 | `programs.opencode.context`           | [opencode](https://opencode.ai/docs/rules/)                                                          |
+| `pi`       | `.pi/agent/AGENTS.md`                        | `programs.pi-coding-agent.context`    | [pi](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/configuration.md)     |
+| `windsurf` | `.codeium/windsurf/memories/global_rules.md` | -                                     | [Windsurf](https://docs.devin.ai/desktop/cascade/memories)                                           |
 
 `dest` はビルド時に決まります。`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`XDG_CONFIG_HOME` などで設定ディレクトリを移している場合、その値は反映されないので、`dest` を明示してください。
 
