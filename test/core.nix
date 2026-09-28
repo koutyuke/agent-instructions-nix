@@ -98,6 +98,16 @@ in
     }
   );
 
+  # 断片の前後の空行を除き、断片の間は空行 1 つにそろえる。
+  core-normalizes-blank-lines = mkCheck "core-normalizes-blank-lines" (
+    core.compose [
+      (builtins.toFile "padded.md" "\n  \n## Padded\n\n\n")
+      (builtins.toFile "no-newline.md" "## No newline")
+      (builtins.toFile "blank.md" " \n")
+      ./fixtures/TOOL.md
+    ] == "## Padded\n\n## No newline\n\n## Tool\n"
+  );
+
   # 本文を一つのバンドル直下にまとめる。
   core-bundle-contains-files = pkgs.runCommand "agent-instructions-core-bundle-contains-files" { } ''
     grep -qx '## Tool' ${bundle}/claude.md

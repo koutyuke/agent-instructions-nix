@@ -73,14 +73,14 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 | `mkBundle { pkgs, fragments, targets, name? }` | バンドルを作る。設定に誤りがあれば throw する                      |
 | `resolveTargets { fragments, targets }`        | 有効なターゲットを `{ <name> = { dest; fragments; }; }` に解決する |
 | `checkTargets resolved`                        | 解決結果のエラーメッセージの一覧を返す。問題なければ空             |
-| `compose fragments`                            | 断片をつなげた文字列を返す                                         |
+| `compose fragments`                            | 断片を整えて、空行 1 つを挟んでつなげた文字列を返す                |
 | `defaultTargets`                               | 組み込みのターゲットと既定の `dest`                                |
 
 結合済みの本文は、一つのバンドルの直下に `{agent}.md` として生成します。たとえば `/nix/store/<hash>-agent-instructions/` に `codex.md` と `claude.md` が並びます。Home Manager は、各 `dest` からバンドル内の対応するファイルへリンクします。`dest` を変更しても、バンドル内のファイル名は変わりません。
 
 ## 断片の書き方
 
-断片は改行 1 つを挟んでつなげられます。見出しの階層はそのまま残るので、H1 は先頭の断片だけに置き、ほかの断片は `##` から書くと生成物の構造が崩れません。
+断片は、前後の空行を取り除いたうえで、空行 1 つを挟んでつなげます。生成物は改行 1 つで終わります。見出しの階層はそのまま残るので、H1 は先頭の断片だけに置き、ほかの断片は `##` から書くと生成物の構造が崩れません。
 
 断片のファイル名を `CLAUDE.md` や `AGENTS.md` にするのは避けてください。そのディレクトリで作業するエージェントが、プロジェクトの指示として読み込んでしまいます。macOS の既定のファイルシステムは大文字と小文字を区別しないので、`claude.md` でも同じことが起きます。
 

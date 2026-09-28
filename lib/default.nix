@@ -34,7 +34,20 @@ let
       lib.unique dests != dests
     ) "multiple targets share the same dest (${lib.concatStringsSep ", " dests}).";
 
-  compose = fragments: lib.concatMapStringsSep "\n" builtins.readFile fragments;
+  isBlank = line: builtins.match "[[:space:]]*" line != null;
+  dropLeadingBlank =
+    lines:
+    if lines != [ ] && isBlank (lib.head lines) then dropLeadingBlank (lib.tail lines) else lines;
+  trimBlank = lines: lib.reverseList (dropLeadingBlank (lib.reverseList (dropLeadingBlank lines)));
+
+  # Leading and trailing blank lines are removed from each fragment.
+  readFragment =
+    path: lib.concatStringsSep "\n" (trimBlank (lib.splitString "\n" (builtins.readFile path)));
+
+  # Fragments are separated by one blank line and the result ends with a newline.
+  compose =
+    fragments:
+    lib.concatMapStringsSep "\n" (s: s + "\n") (lib.filter (s: s != "") (map readFragment fragments));
 
   # Build a bundle containing the composed content in $out/<target>.md.
   mkBundle =
