@@ -8,7 +8,7 @@
 
 | 層 | 場所 | 依存 | 役割 |
 | -- | ---- | ---- | ---- |
-| コア | `lib/`（flake の `lib` 出力） | nixpkgs だけ | ターゲットの解決、検証、断片の結合、`$HOME` と同じ構造のパッケージ（バンドル）の生成 |
+| コア | `lib/`（flake の `lib` 出力） | nixpkgs だけ | ターゲットの解決、検証、断片の結合、ターゲットごとの本文をまとめたパッケージ（バンドル）の生成 |
 | Home Manager の対応層 | `modules/home-manager.nix`（`homeManagerModules.default`） | Home Manager | オプションをコアに渡し、バンドルのファイルを `home.file` でリンクする |
 
 flake の input は nixpkgs だけです。Home Manager の対応層は、利用者の Home Manager に読み込まれて動くので、この flake は Home Manager に依存しません。
@@ -65,7 +65,7 @@ bundle = inputs.agent-instructions.lib.mkBundle {
   fragments = [ ./instructions/COMMON.md ];
   targets.claude.enable = true;
 };
-# => $out/.claude/CLAUDE.md
+# => $out/claude.md
 ```
 
 | 関数 | 説明 |
@@ -75,6 +75,8 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 | `checkTargets resolved` | 解決結果のエラーメッセージの一覧を返す。問題なければ空 |
 | `compose fragments` | 断片をつなげた文字列を返す |
 | `defaultTargets` | 組み込みのターゲットと既定の `dest` |
+
+結合済みの本文は、一つのバンドルの直下に `{agent}.md` として生成します。たとえば `/nix/store/<hash>-agent-instructions/` に `codex.md` と `claude.md` が並びます。Home Manager は、各 `dest` からバンドル内の対応するファイルへリンクします。`dest` を変更しても、バンドル内のファイル名は変わりません。
 
 ## 断片の書き方
 

@@ -36,7 +36,7 @@ let
 
   compose = fragments: lib.concatMapStringsSep "\n" builtins.readFile fragments;
 
-  # A store tree mirroring $HOME, e.g. $out/.claude/CLAUDE.md.
+  # Build a bundle containing the composed content in $out/<target>.md.
   mkBundle =
     {
       pkgs,
@@ -53,7 +53,7 @@ let
     else
       pkgs.linkFarm name (
         lib.mapAttrsToList (target: t: {
-          name = t.dest;
+          name = "${target}.md";
           path = pkgs.writeText "agent-instructions-${target}.md" (compose t.fragments);
         }) resolved
       );

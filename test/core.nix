@@ -41,6 +41,10 @@ let
     fragments = common;
     targets = {
       claude.enable = true;
+      codex = {
+        enable = true;
+        fragments = [ ./fixtures/CODEX.md ];
+      };
       goose.enable = true;
     };
   };
@@ -94,10 +98,11 @@ in
     }
   );
 
-  # The bundle mirrors $HOME, including dot-directories and dotfiles.
+  # 本文を一つのバンドル直下にまとめる。
   core-bundle-contains-files = pkgs.runCommand "agent-instructions-core-bundle-contains-files" { } ''
-    grep -qx '## Tool' ${bundle}/.claude/CLAUDE.md
-    test -f ${bundle}/.config/goose/.goosehints
+    grep -qx '## Tool' ${bundle}/claude.md
+    grep -qx '## Codex' ${bundle}/codex.md
+    test -f ${bundle}/goose.md
     touch $out
   '';
 }

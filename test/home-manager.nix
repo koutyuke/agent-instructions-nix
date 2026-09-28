@@ -70,6 +70,10 @@ in
   hm-links-bundle-files = pkgs.runCommand "agent-instructions-hm-links-bundle-files" { } ''
     grep -qx '## Tool' ${composed.home.file.".claude/CLAUDE.md".source}
     grep -qx '## Codex' ${composed.home.file.".codex/AGENTS.md".source}
+    test "$(basename ${composed.home.file.".claude/CLAUDE.md".source})" = claude.md
+    test "$(basename ${composed.home.file.".codex/AGENTS.md".source})" = codex.md
+    test "$(dirname ${composed.home.file.".claude/CLAUDE.md".source})" = \
+      "$(dirname ${composed.home.file.".codex/AGENTS.md".source})"
     touch $out
   '';
 

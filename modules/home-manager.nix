@@ -84,7 +84,7 @@ in
 
     # Skipped on errors so the assertions above are reported instead of a throw.
     home.file = lib.mkIf (errors == [ ]) (
-      lib.mapAttrs' (_: t: lib.nameValuePair t.dest { source = "${bundle}/${t.dest}"; }) resolved
+      lib.mapAttrs' (name: t: lib.nameValuePair t.dest { source = "${bundle}/${name}.md"; }) resolved
     );
   };
 }
