@@ -76,6 +76,7 @@ in
         assertion = false;
         message = "programs.agent-instructions: ${message}";
       }) errors
+      # Check that there is no overlap with programs.{provider}.context on the Home Manager side
       ++ lib.mapAttrsToList (name: path: {
         assertion = !(resolved ? ${name}) || lib.attrByPath path "" config == "";
         message = "programs.agent-instructions.targets.${name} writes the same file as `${lib.concatStringsSep "." path}`; set only one of them.";
