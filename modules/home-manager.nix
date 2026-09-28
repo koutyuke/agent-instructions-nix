@@ -15,7 +15,7 @@ let
   cfg = config.programs.agent-instructions;
 
   args = {
-    inherit (cfg) fragments;
+    inherit (cfg) fragments insertH1;
     targets = lib.mapAttrs (_: t: removeAttrs t [ "_module" ]) cfg.targets;
   };
   resolved = core.resolveTargets args;
@@ -45,6 +45,19 @@ let
     }
   );
 
+  h1Module = {
+    options = {
+      enable = lib.mkEnableOption "an H1 at the top of the composed file";
+
+      text = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "Global instructions";
+        description = "Heading text. Defaults to the file name of `dest`.";
+      };
+    };
+  };
+
   targetModule =
     { name, ... }:
     {
@@ -62,6 +75,12 @@ let
           type = types.listOf fragmentType;
           default = [ ];
           description = "Fragments appended after the common fragments for this target.";
+        };
+
+        insertH1 = mkOption {
+          type = types.nullOr (types.submodule h1Module);
+          default = null;
+          description = "Overrides {option}`programs.agent-instructions.insertH1` for this target.";
         };
 
         inheritCommon = mkOption {
@@ -86,6 +105,12 @@ in
         ]
       '';
       description = "Markdown fragments shared by every target, concatenated in order. A path or `{ path; trimFrontMatter; trimH1; }`.";
+    };
+
+    insertH1 = mkOption {
+      type = types.submodule h1Module;
+      default = { };
+      description = "Heading inserted at the top of every target's file.";
     };
 
     targets = mkOption {

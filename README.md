@@ -68,13 +68,13 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 # => $out/claude.md
 ```
 
-| 関数                                           | 説明                                                               |
-| ---------------------------------------------- | ------------------------------------------------------------------ |
-| `mkBundle { pkgs, fragments, targets, name? }` | バンドルを作る。設定に誤りがあれば throw する                      |
-| `resolveTargets { fragments, targets }`        | 有効なターゲットを `{ <name> = { dest; fragments; }; }` に解決する |
-| `checkTargets resolved`                        | 解決結果のエラーメッセージの一覧を返す。問題なければ空             |
-| `compose fragments`                            | 断片を整えて、空行 1 つを挟んでつなげた文字列を返す                |
-| `defaultTargets`                               | 組み込みのターゲットと既定の `dest`                                |
+| 関数                                                      | 説明                                                                                                           |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `mkBundle { pkgs, fragments, insertH1?, targets, name? }` | バンドルを作る。設定に誤りがあれば throw する                                                                  |
+| `resolveTargets { fragments, insertH1?, targets }`        | 有効なターゲットを `{ <name> = { dest; fragments; h1; }; }` に解決する。`h1` は挿入する見出しの文字列か `null` |
+| `checkTargets resolved`                                   | 解決結果のエラーメッセージの一覧を返す。問題なければ空                                                         |
+| `compose fragments`                                       | 断片を整えて、空行 1 つを挟んでつなげた文字列を返す                                                            |
+| `defaultTargets`                                          | 組み込みのターゲットと既定の `dest`                                                                            |
 
 結合済みの本文は、一つのバンドルの直下に `{agent}.md` として生成します。たとえば `/nix/store/<hash>-agent-instructions/` に `codex.md` と `claude.md` が並びます。Home Manager は、各 `dest` からバンドル内の対応するファイルへリンクします。`dest` を変更しても、バンドル内のファイル名は変わりません。
 
@@ -87,6 +87,22 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 - `trimFrontMatter = true`: 1 行目の `---` から次の `---` までを取り除く
 - `trimH1 = true`: front matter と空行のあとの最初の行が `# ` で始まる H1 なら取り除く。本文の途中にある H1 は残す
 
+生成物の先頭に H1 を入れるには `insertH1.enable = true` にします。`insertH1.text` を省くと、`dest` のファイル名（`CLAUDE.md`、`.goosehints` など）を見出しにします。`targets.<name>.insertH1` を設定すると、そのターゲットでは共通の `insertH1` の代わりに使います。
+
+```nix
+programs.agent-instructions = {
+  insertH1.enable = true; # 各ファイルの先頭が "# CLAUDE.md" や "# AGENTS.md" になる
+  fragments = [
+    ./instructions/COMMON.md
+    { path = ./rules/nix.md; trimFrontMatter = true; trimH1 = true; }
+  ];
+  targets.codex = {
+    enable = true;
+    insertH1 = { enable = true; text = "Codex の指示"; };
+  };
+};
+```
+
 断片のファイル名を `CLAUDE.md` や `AGENTS.md` にするのは避けてください。そのディレクトリで作業するエージェントが、プロジェクトの指示として読み込んでしまいます。macOS の既定のファイルシステムは大文字と小文字を区別しないので、`claude.md` でも同じことが起きます。
 
 ## オプション
@@ -97,10 +113,13 @@ Home Manager では `programs.agent-instructions` の下に、コアでは引数
 | ------------------------------ | ----------------------- | ------------ | ------------------------------------------------------------ |
 | `enable`                       | bool                    | `false`      | モジュールを有効にする                                       |
 | `fragments`                    | list of (path or attrs) | `[ ]`        | 全ターゲットで共通の断片                                     |
+| `insertH1.enable`              | bool                    | `false`      | 生成物の先頭に H1 を入れる                                   |
+| `insertH1.text`                | null or string          | `null`       | 見出しの文字列。`null` なら `dest` のファイル名              |
 | `targets.<name>.enable`        | bool                    | `false`      | このターゲットに書き込む                                     |
 | `targets.<name>.dest`          | string                  | 組み込みの値 | `$HOME` からの相対パス。組み込みのターゲットでも上書きできる |
 | `targets.<name>.fragments`     | list of (path or attrs) | `[ ]`        | 共通の断片のあとに追加する断片                               |
 | `targets.<name>.inheritCommon` | bool                    | `true`       | `false` にすると共通の断片を使わない                         |
+| `targets.<name>.insertH1`      | null or attrs           | `null`       | このターゲットで共通の `insertH1` の代わりに使う設定         |
 
 次の場合はエラーになります。Home Manager では assertion として、`mkBundle` では throw として報告します。
 

@@ -77,6 +77,30 @@ in
     touch $out
   '';
 
+  hm-trims-fragments-and-inserts-h1 =
+    let
+      config = eval {
+        programs.agent-instructions = {
+          enable = true;
+          insertH1.enable = true;
+          fragments = [
+            {
+              path = ./fixtures/RULE.md;
+              trimFrontMatter = true;
+              trimH1 = true;
+            }
+          ];
+          targets.claude.enable = true;
+        };
+      };
+    in
+    pkgs.runCommand "agent-instructions-hm-trims-fragments-and-inserts-h1" { } ''
+      test "$(cat ${
+        config.home.file.".claude/CLAUDE.md".source
+      })" = "$(printf '# CLAUDE.md\n\n## Rule body')"
+      touch $out
+    '';
+
   hm-dest-is-overridable = mkCheck "hm-dest-is-overridable" (
     (eval (withTargets {
       claude = {

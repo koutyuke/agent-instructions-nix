@@ -4,18 +4,37 @@
 let
   defaultTargets = import ./targets.nix;
 
-  # Enabled targets as `{ <name> = { dest; fragments; }; }`, with built-in
+  # Enabled targets as `{ <name> = { dest; fragments; h1; }; }`, with built-in
   # dests filled in and common fragments prepended unless inheritCommon = false.
   # `dest` is null when neither the target nor a built-in provides one.
+  # `h1` is the heading text to insert, or null; a target's `insertH1` replaces
+  # the common one, and a null `text` falls back to the dest's file name.
   resolveTargets =
     {
       fragments ? [ ],
+      insertH1 ? { },
       targets ? { },
     }:
-    lib.mapAttrs (name: t: {
-      dest = if t.dest or null != null then t.dest else defaultTargets.${name}.dest or null;
-      fragments = lib.optionals (t.inheritCommon or true) fragments ++ t.fragments or [ ];
-    }) (lib.filterAttrs (_: t: t.enable or false) targets);
+    lib.mapAttrs (
+      name: t:
+      let
+        dest = if t.dest or null != null then t.dest else defaultTargets.${name}.dest or null;
+        h1 = if t.insertH1 or null != null then t.insertH1 else insertH1;
+      in
+      {
+        inherit dest;
+        fragments = lib.optionals (t.inheritCommon or true) fragments ++ t.fragments or [ ];
+        h1 =
+          if !(h1.enable or false) then
+            null
+          else if h1.text or null != null then
+            h1.text
+          else if dest != null then
+            baseNameOf dest
+          else
+            null;
+      }
+    ) (lib.filterAttrs (_: t: t.enable or false) targets);
 
   # Error messages for resolved targets; empty when they can be written.
   checkTargets =
@@ -78,11 +97,12 @@ let
     {
       pkgs,
       fragments ? [ ],
+      insertH1 ? { },
       targets ? { },
       name ? "agent-instructions",
     }:
     let
-      resolved = resolveTargets { inherit fragments targets; };
+      resolved = resolveTargets { inherit fragments insertH1 targets; };
       errors = checkTargets resolved;
     in
     if errors != [ ] then
@@ -91,7 +111,9 @@ let
       pkgs.linkFarm name (
         lib.mapAttrsToList (target: t: {
           name = "${target}.md";
-          path = pkgs.writeText "agent-instructions-${target}.md" (compose t.fragments);
+          path = pkgs.writeText "agent-instructions-${target}.md" (
+            lib.optionalString (t.h1 != null) "# ${t.h1}\n\n" + compose t.fragments
+          );
         }) resolved
       );
 in

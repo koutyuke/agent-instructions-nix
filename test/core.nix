@@ -38,9 +38,21 @@ let
     );
   hasError = needle: targets: lib.any (lib.hasInfix needle) (errorsFor targets);
 
+  h1For =
+    args:
+    lib.mapAttrs (_: t: t.h1) (
+      core.resolveTargets (
+        {
+          fragments = common;
+        }
+        // args
+      )
+    );
+
   bundle = core.mkBundle {
     inherit pkgs;
     fragments = common;
+    insertH1.enable = true;
     targets = {
       claude.enable = true;
       codex = {
@@ -68,6 +80,7 @@ in
     resolved.custom == {
       dest = ".custom/RULES.md";
       fragments = [ ./fixtures/CODEX.md ];
+      h1 = null;
     }
   );
 
@@ -138,6 +151,44 @@ in
     ] == "## Tool\n"
   );
 
+  core-insert-h1 = mkCheck "core-insert-h1" (
+    h1For {
+      insertH1.enable = true;
+      targets = {
+        claude.enable = true;
+        goose.enable = true;
+        codex = {
+          enable = true;
+          insertH1 = {
+            enable = true;
+            text = "Codex rules";
+          };
+        };
+        opencode = {
+          enable = true;
+          insertH1.enable = false;
+        };
+      };
+    } == {
+      claude = "CLAUDE.md";
+      goose = ".goosehints";
+      codex = "Codex rules";
+      opencode = null;
+    }
+  );
+
+  core-insert-h1-uses-common-text = mkCheck "core-insert-h1-uses-common-text" (
+    h1For {
+      insertH1 = {
+        enable = true;
+        text = "Rules";
+      };
+      targets.claude.enable = true;
+    } == {
+      claude = "Rules";
+    }
+  );
+
   # 断片の前後の空行を除き、断片の間は空行 1 つにそろえる。
   core-normalizes-blank-lines = mkCheck "core-normalizes-blank-lines" (
     core.compose [
@@ -150,6 +201,9 @@ in
 
   # 本文を一つのバンドル直下にまとめる。
   core-bundle-contains-files = pkgs.runCommand "agent-instructions-core-bundle-contains-files" { } ''
+    test "$(head -n 1 ${bundle}/claude.md)" = '# CLAUDE.md'
+    test -z "$(sed -n 2p ${bundle}/claude.md)"
+    grep -qx '# Common' ${bundle}/claude.md
     grep -qx '## Tool' ${bundle}/claude.md
     grep -qx '## Codex' ${bundle}/codex.md
     test -f ${bundle}/goose.md
