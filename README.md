@@ -79,6 +79,20 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 
 結合済みの本文は、一つのバンドルの直下に `{agent}.md` として生成します。たとえば `/nix/store/<hash>-agent-instructions/` に `codex.md` と `claude.md` が並びます。Home Manager は、各 `dest` からバンドル内の対応するファイルへリンクします。`dest` を変更しても、バンドル内のファイル名は変わりません。
 
+### ローカルで試す
+
+[examples/core.nix](./examples/core.nix) は、共通の断片から front matter と元の H1 を取り除き、配置先のファイル名を H1 にします。Codex には専用の断片も追加します。
+
+サンプル自身が `builtins.getFlake` でルートの flake を読み込みます。`flake.nix` にサンプル用の出力を追加する必要はありません。リポジトリのルートで実行してください。
+
+```bash
+nix build --impure --file examples/core.nix
+cat result/claude.md
+cat result/codex.md
+```
+
+`--impure` は、ローカルの flake の読み込みと `builtins.currentSystem` の利用に必要です。`result` は生成したバンドルへのリンクです。Claude の先頭は `# CLAUDE.md`、Codex の先頭は `# AGENTS.md` になり、Codex だけに追加ルールが入ります。ホームディレクトリの指示ファイルへの配置は行いません。
+
 ## 断片の書き方
 
 断片は次の順に整えてから、空行 1 つを挟んでつなげます。生成物は改行 1 つで終わります。
