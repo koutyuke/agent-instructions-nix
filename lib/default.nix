@@ -4,13 +4,15 @@
 let
   defaultTargets = import ./targets.nix;
   targets = import ./resolve.nix { inherit lib defaultTargets; };
-  compose = import ./compose.nix { inherit lib; };
+  content = import ./compose.nix { inherit lib; };
   mkBundle = import ./bundle.nix {
-    inherit lib compose;
+    inherit lib;
+    inherit (content) compose targetWarnings;
     inherit (targets) resolveTargets checkTargets;
   };
 in
 {
-  inherit defaultTargets compose mkBundle;
+  inherit defaultTargets mkBundle;
+  inherit (content) compose targetWarnings;
   inherit (targets) resolveTargets checkTargets;
 }

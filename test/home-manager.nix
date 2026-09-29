@@ -77,7 +77,7 @@ in
     touch $out
   '';
 
-  hm-trims-fragments-and-inserts-h1 =
+  hm-applies-heading-strategy-and-inserts-h1 =
     let
       config = eval {
         programs.agent-instructions = {
@@ -86,15 +86,14 @@ in
           fragments = [
             {
               path = ./fixtures/RULE.md;
-              trimFrontMatter = true;
-              trimH1 = true;
+              headingStrategy = "drop";
             }
           ];
           targets.claude.enable = true;
         };
       };
     in
-    pkgs.runCommand "agent-instructions-hm-trims-fragments-and-inserts-h1" { } ''
+    pkgs.runCommand "agent-instructions-hm-applies-heading-strategy-and-inserts-h1" { } ''
       test "$(cat ${
         config.home.file.".claude/CLAUDE.md".source
       })" = "$(printf '# CLAUDE.md\n\n## Rule body')"

@@ -3,6 +3,7 @@
   resolveTargets,
   checkTargets,
   compose,
+  targetWarnings,
 }:
 let
   # Build a bundle containing the composed content in $out/<target>.md.
@@ -21,13 +22,13 @@ let
     if errors != [ ] then
       throw "agent-instructions:\n${lib.concatMapStringsSep "\n" (e: "- ${e}") errors}"
     else
-      pkgs.linkFarm name (
-        lib.mapAttrsToList (target: t: {
-          name = "${target}.md";
-          path = pkgs.writeText "agent-instructions-${target}.md" (
-            lib.optionalString (t.h1 != null) "# ${t.h1}\n\n" + compose t.fragments
-          );
-        }) resolved
+      lib.showWarnings (map (w: "agent-instructions: ${w}") (targetWarnings resolved)) (
+        pkgs.linkFarm name (
+          lib.mapAttrsToList (target: t: {
+            name = "${target}.md";
+            path = pkgs.writeText "agent-instructions-${target}.md" (compose t);
+          }) resolved
+        )
       );
 in
 mkBundle

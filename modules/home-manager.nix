@@ -30,16 +30,17 @@ let
           description = "Markdown file to read.";
         };
 
-        trimFrontMatter = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Whether to remove a leading `---` front matter block.";
-        };
-
-        trimH1 = mkOption {
-          type = types.bool;
-          default = false;
-          description = "Whether to remove an H1 that comes first after the front matter.";
+        headingStrategy = mkOption {
+          type = types.enum [
+            "none"
+            "demote"
+            "drop"
+          ];
+          default = "none";
+          description = ''
+            How to treat the fragment's headings. `demote` moves every heading one
+            level down and `drop` removes an H1 that comes first.
+          '';
         };
       };
     }
@@ -101,10 +102,10 @@ in
       example = lib.literalExpression ''
         [
           ./instructions/COMMON.md
-          { path = ./rules/nix.md; trimFrontMatter = true; trimH1 = true; }
+          { path = ./rules/context7.md; headingStrategy = "demote"; }
         ]
       '';
-      description = "Markdown fragments shared by every target, concatenated in order. A path or `{ path; trimFrontMatter; trimH1; }`.";
+      description = "Markdown fragments shared by every target, concatenated in order. A path or `{ path; headingStrategy; }`.";
     };
 
     insertH1 = mkOption {

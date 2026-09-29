@@ -38,6 +38,19 @@ let
     );
   hasError = needle: targets: lib.any (lib.hasInfix needle) (errorsFor targets);
 
+  textOf = fragments: core.compose { inherit fragments; };
+  # 本文と、同じ断片について targetWarnings が返す警告。
+  composeWith = t: {
+    text = core.compose t;
+    warnings = core.targetWarnings {
+      test = {
+        h1 = null;
+      }
+      // t;
+    };
+  };
+  bom = builtins.fromJSON ''"\ufeff"'';
+
   h1For =
     args:
     lib.mapAttrs (_: t: t.h1) (
@@ -51,7 +64,13 @@ let
 
   bundle = core.mkBundle {
     inherit pkgs;
-    fragments = common;
+    fragments = [
+      {
+        path = ./fixtures/COMMON.md;
+        headingStrategy = "demote";
+      }
+      ./fixtures/TOOL.md
+    ];
     insertH1.enable = true;
     targets = {
       claude.enable = true;
@@ -69,11 +88,11 @@ in
   );
 
   core-composes-common-fragments = mkCheck "core-composes-common-fragments" (
-    core.compose resolved.claude.fragments == "# Common\n\n## Tool\n"
+    core.compose resolved.claude == "# Common\n\n## Tool\n"
   );
 
   core-appends-target-fragments = mkCheck "core-appends-target-fragments" (
-    core.compose resolved.codex.fragments == "# Common\n\n## Tool\n\n## Codex\n"
+    core.compose resolved.codex == "# Common\n\n## Tool\n\n## Codex\n"
   );
 
   core-custom-target-without-common = mkCheck "core-custom-target-without-common" (
@@ -113,42 +132,150 @@ in
     }
   );
 
-  core-trims-front-matter-and-h1 = mkCheck "core-trims-front-matter-and-h1" (
-    core.compose [
-      {
-        path = rule;
-        trimFrontMatter = true;
-        trimH1 = true;
-      }
-    ] == "## Rule body\n"
+  core-strips-front-matter = mkCheck "core-strips-front-matter" (
+    textOf [ rule ] == "# Rule\n\n## Rule body\n"
   );
 
-  core-trims-front-matter-only = mkCheck "core-trims-front-matter-only" (
-    core.compose [
+  core-demotes-headings = mkCheck "core-demotes-headings" (
+    textOf [
       {
         path = rule;
-        trimFrontMatter = true;
+        headingStrategy = "demote";
       }
-    ] == "# Rule\n\n## Rule body\n"
+    ] == "## Rule\n\n### Rule body\n"
   );
 
-  core-trims-h1-after-front-matter = mkCheck "core-trims-h1-after-front-matter" (
-    core.compose [
+  # demote は H1 がなくても下げ、コードフェンスの中は変えない。
+  core-demote-skips-code-fences = mkCheck "core-demote-skips-code-fences" (
+    textOf [
+      ./fixtures/TOOL.md
       {
-        path = rule;
-        trimH1 = true;
+        path = builtins.toFile "fenced.md" "## A\n\n~~~sh\n# comment\n~~~\n";
+        headingStrategy = "demote";
       }
-    ] == "---\npaths: \"*.nix\"\n---\n\n## Rule body\n"
+    ] == "## Tool\n\n### A\n\n~~~sh\n# comment\n~~~\n"
   );
 
-  # 先頭が H2 なら何も消さない。
-  core-trim-h1-keeps-other-headings = mkCheck "core-trim-h1-keeps-other-headings" (
-    core.compose [
+  core-demote-warns-beyond-h6 =
+    let
+      c = composeWith {
+        fragments = [
+          {
+            path = builtins.toFile "h6.md" "###### Six\n";
+            headingStrategy = "demote";
+          }
+        ];
+      };
+    in
+    mkCheck "core-demote-warns-beyond-h6" (
+      c.text == "####### Six\n" && lib.any (lib.hasInfix "H6") c.warnings
+    );
+
+  core-drops-leading-h1 =
+    let
+      c = composeWith {
+        fragments = [
+          {
+            path = rule;
+            headingStrategy = "drop";
+          }
+          {
+            path = ./fixtures/TOOL.md;
+            headingStrategy = "drop";
+          }
+        ];
+      };
+    in
+    mkCheck "core-drops-leading-h1" (c.text == "## Rule body\n\n## Tool\n" && c.warnings == [ ]);
+
+  # H1 の直後の本文は残し、前の節に混ざることを警告する。
+  core-drop-warns-on-preface =
+    let
+      c = composeWith {
+        fragments = [
+          {
+            path = builtins.toFile "preface.md" "# Title\n\ncontents\n\n## H2\n";
+            headingStrategy = "drop";
+          }
+        ];
+      };
+    in
+    mkCheck "core-drop-warns-on-preface" (
+      c.text == "contents\n\n## H2\n" && lib.any (lib.hasInfix "dropped H1") c.warnings
+    );
+
+  core-warns-multiple-h1 =
+    let
+      c = composeWith {
+        h1 = "CLAUDE.md";
+        fragments = [ ./fixtures/COMMON.md ];
+      };
+    in
+    mkCheck "core-warns-multiple-h1" (
+      c.text == "# CLAUDE.md\n\n# Common\n"
+      && lib.any (lib.hasInfix "multiple H1") c.warnings
+      && core.targetWarnings resolved == [ ]
+    );
+
+  # 閉じていないフェンスは開始と同じ記号と長さで閉じ、その中の見出しは変えない。
+  core-closes-unclosed-fence =
+    let
+      c = composeWith {
+        fragments = [
+          {
+            path = builtins.toFile "unclosed.md" "# A\n\n````md\n```\n# x\n";
+            headingStrategy = "demote";
+          }
+          ./fixtures/TOOL.md
+        ];
+      };
+    in
+    mkCheck "core-closes-unclosed-fence" (
+      c.text == "## A\n\n````md\n```\n# x\n````\n\n## Tool\n"
+      && lib.any (lib.hasInfix "not closed") c.warnings
+    );
+
+  # 断片の警告はターゲットをまたいで 1 回にまとめ、H1 の重複はターゲットごとに報告する。
+  core-target-warnings-are-deduplicated =
+    let
+      warnings = core.targetWarnings (
+        core.resolveTargets {
+          fragments = [
+            (builtins.toFile "unclosed-shared.md" "```\n")
+            ./fixtures/COMMON.md
+          ];
+          insertH1.enable = true;
+          targets = {
+            claude.enable = true;
+            codex.enable = true;
+          };
+        }
+      );
+    in
+    mkCheck "core-target-warnings-are-deduplicated" (
+      lib.count (lib.hasInfix "not closed") warnings == 1
+      && lib.any (lib.hasPrefix "targets.claude: ") warnings
+      && lib.any (lib.hasPrefix "targets.codex: ") warnings
+    );
+
+  core-rejects-unknown-heading-strategy = mkCheck "core-rejects-unknown-heading-strategy" (
+    !(builtins.tryEval (textOf [
       {
         path = ./fixtures/TOOL.md;
-        trimH1 = true;
+        headingStrategy = "remove";
       }
-    ] == "## Tool\n"
+    ])).success
+  );
+
+  core-collapses-blank-lines-outside-code = mkCheck "core-collapses-blank-lines-outside-code" (
+    textOf [ (builtins.toFile "blank-lines.md" "## A\n\n\n\ntext\n\n```\na\n\n\nb\n```\n") ]
+    == "## A\n\ntext\n\n```\na\n\n\nb\n```\n"
+  );
+
+  core-normalizes-crlf-and-bom = mkCheck "core-normalizes-crlf-and-bom" (
+    textOf [
+      (builtins.toFile "crlf.md" "${bom}---\r\nx: 1\r\n---\r\n## A\r\ntext\r\n")
+    ] == "## A\ntext\n"
   );
 
   core-insert-h1 = mkCheck "core-insert-h1" (
@@ -191,7 +318,7 @@ in
 
   # 断片の前後の空行を除き、断片の間は空行 1 つにそろえる。
   core-normalizes-blank-lines = mkCheck "core-normalizes-blank-lines" (
-    core.compose [
+    textOf [
       (builtins.toFile "padded.md" "\n  \n## Padded\n\n\n")
       (builtins.toFile "no-newline.md" "## No newline")
       (builtins.toFile "blank.md" " \n")
@@ -203,7 +330,7 @@ in
   core-bundle-contains-files = pkgs.runCommand "agent-instructions-core-bundle-contains-files" { } ''
     test "$(head -n 1 ${bundle}/claude.md)" = '# CLAUDE.md'
     test -z "$(sed -n 2p ${bundle}/claude.md)"
-    grep -qx '# Common' ${bundle}/claude.md
+    grep -qx '## Common' ${bundle}/claude.md
     grep -qx '## Tool' ${bundle}/claude.md
     grep -qx '## Codex' ${bundle}/codex.md
     test -f ${bundle}/goose.md
