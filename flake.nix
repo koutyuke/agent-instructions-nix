@@ -1,5 +1,5 @@
 {
-  description = "Compose Markdown fragments into global instruction files for AI coding agents";
+  description = "Compose and manage shared instructions for AI coding agents with Nix and Home Manager.";
 
   # Keep nixpkgs as the only input. Home Manager adapter tests live in ./dev.
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
