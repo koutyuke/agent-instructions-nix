@@ -128,9 +128,7 @@ let
       text = lib.concatStringsSep "\n" (dropLeadingBlank (map (l: l.line) collapsed));
       h1Count = lib.count (l: isHeading l && headingLevel l.line == 1) shifted;
       warnings = map (w: "${toString f.path}: ${w}") (
-        lib.optional (
-          scanned.fence != null
-        ) "code fence is not closed; closed it at the end of the source."
+        lib.optional (scanned.fence != null) "code fence is not closed; closed it at the end of the source."
         ++ lib.optional tooDeep "a heading goes deeper than H6 after demote; written as \"#######\"."
         ++ lib.optional hasPreface "content after the dropped H1 now continues the preceding section."
       );
