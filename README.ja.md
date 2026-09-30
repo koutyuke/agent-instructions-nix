@@ -10,15 +10,15 @@
   </p>
 
   <p>
-    <b>🇬🇧 English</b> | <a href="./README.ja.md">🇯🇵 日本語</a>
+    <a href="./README.md">🇬🇧 English</a> | <b>🇯🇵 日本語</b>
   </p>
 
   <p><sub>✦ ✦ ✦</sub></p>
 </div>
 
-## Overview
+## 概要
 
-**agent-instructions-nix** is a Nix library that composes multiple Markdown files to generate global instruction files (such as `CLAUDE.md` and `AGENTS.md`) for AI coding agents. It allows you to centrally manage shared instructions while flexibly adding agent-specific instructions.
+**agent-instructions-nix** は、複数の Markdown ファイルを組み合わせて AI コーディングエージェント向けのグローバル指示ファイル（`CLAUDE.md` や `AGENTS.md` など）を生成する Nix ライブラリです。共通の指示を一元管理しながら、エージェント固有の指示も柔軟に追加・構成できます。
 
 ```text
 CONTEXT7.md ────┐
@@ -28,14 +28,14 @@ COMMON.md ────→ + ────┬────→ ~/.claude/CLAUDE.md (
 CODEX.md ───────────→ + ───→ ~/.codex/AGENTS.md  (COMMON.md + CONTEXT7.md + CODEX.md)
 ```
 
-- **Shared Instructions & Custom Extensions**: Concatenates shared Markdown files in a specified order and appends agent-specific files.
-- **Built-in Support for Major Agents**: Predefined default destination paths for 35 coding agents. Arbitrary destination paths can also be specified, generating files only for the agents you enable.
-- **Automatic Markdown Formatting**: Automatically strips front matter and redundant blank lines, with customizable heading level adjustments (H1–H6) per file.
-- **Home Manager Integration**: Automatically symlinks instruction files to each agent's default location via Home Manager. Can also be used standalone (Nix-only) without Home Manager just to generate files in the Nix store.
+- **指示の共通化と個別カスタマイズ**: 共通の Markdown ファイルを指定順に結合し、エージェント固有のファイルを追加・カスタマイズできます。
+- **主要エージェントへの組み込み対応**: 35 種類のエージェント向けに既定の配置パスを定義済みです。任意のパスも指定可能で、必要なエージェントの設定ファイルだけを生成できます。
+- **Markdown の自動整形**: front matter や冗長な空行の除去、ファイルごとの見出しレベル（H1〜）の自動調整に対応しています。
+- **Home Manager 連携**: 各エージェントの指示ファイルへのシンボリックリンクを Home Manager で自動配置できます。Home Manager を使わず、ファイル生成（Nix 単体）のみで利用することも可能です。
 
-## Usage
+## 使い方
 
-Add this library to your `flake.nix` `inputs`:
+`flake.nix` の `inputs` に本ライブラリを追加します。
 
 ```nix
 # flake.nix
@@ -45,11 +45,11 @@ inputs.agent-instructions = {
 };
 ```
 
-Next, import the module into your Home Manager configuration and specify the shared Markdown files and target agents.
-In the following example, shared instructions are deployed to both Claude Code and Codex, while `CODEX.md` is appended only to Codex:
+続いて Home Manager の設定でモジュールを読み込み、共通の Markdown ファイルと対象のエージェントを指定します。
+以下の例では Claude Code と Codex の双方に共通指示を配置し、Codex にのみ `CODEX.md` を追加しています。
 
 ```nix
-# Home Manager configuration
+# Home Manager の設定
 { inputs, ... }:
 {
   imports = [
@@ -82,49 +82,45 @@ In the following example, shared instructions are deployed to both Claude Code a
 }
 ```
 
-In this setup:
+上記の設定では、`sources` に指定した順序で `COMMON.md` と `CONTEXT7.md` が結合され、Codex にはその末尾に `CODEX.md` が追加されます。
 
-- `COMMON.md` and `CONTEXT7.md` are concatenated in the order specified in `sources`.
-- For Codex, `CODEX.md` is appended at the end.
-- `headingStrategy` demotes all heading levels in `CONTEXT7.md` by one level (e.g. H1 → H2), and drops the leading H1 heading from `CODEX.md`.
-- `insertH1.enable = true` automatically inserts the target file name (`CLAUDE.md`, `AGENTS.md`) as the top-level H1 heading.
-- Applying your Home Manager configuration creates symlinks at `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`.
+Home Manager の設定を反映すると、設定をもとにファイルを統合し、`~/.claude/CLAUDE.md` および `~/.codex/AGENTS.md` にシンボリックリンクが作成されます。
 
-An example matching this configuration can be found in [example/](./example). You can inspect the source Markdown files and the resulting output files ([example/result/](./example/result)).
-To test building without Home Manager, run the following in the repository root:
+この設定と同じ構成の例を [example/](./example) に置いています。元の Markdown ファイルと、生成されるファイル（[example/result/](./example/result)）を確認できます。
+Home Manager を使わずにビルドを試すには、リポジトリのルートで次のコマンドを実行します。
 
 ```bash
 nix build --impure --file ./example
 diff -r result example/result
 ```
 
-> The `--impure` flag is required to load the local flake and evaluate `builtins.currentSystem`.
+> `--impure` は、ローカルの flake の読み込みと `builtins.currentSystem` の評価に必要です。
 
-## Markdown Composition and Formatting
+## Markdown の結合と整形
 
-Each Markdown file undergoes the following preprocessing steps before being concatenated with a single blank line in between:
+各 Markdown ファイルは以下の前処理を行ったうえで、空行を 1 行挟んで結合されます。
 
-1. **Newline & BOM Normalization**: Normalizes CRLF line endings to LF and removes any leading BOM.
-2. **Front Matter Removal**: Strips front matter blocks (from `---` on line 1 to the closing `---`), preventing them from being misinterpreted as Markdown headings or horizontal rules.
-3. **Heading Level Conversion**: Adjusts heading levels according to the specified `headingStrategy`.
-4. **Blank Line Cleanup**: Trims leading and trailing blank lines, and collapses consecutive blank lines outside code fences into a single blank line.
+1. **改行・BOM の正規化**: 改行コードを LF に統一し、ファイル先頭の BOM を除去
+2. **front matter の除去**: 1 行目の `---` から次の `---` までのブロックを除去（結合後のドキュメント途中に残ると見出しや区切り線として誤認されるため）
+3. **見出しレベルの変換**: 指定された `headingStrategy` に従って見出しを調整
+4. **空行の整理**: 前後の不要な空行を除去し、コードフェンス外にある連続した空行を 1 行に集約
 
 ### `headingStrategy`
 
-The `headingStrategy` option controls how Markdown headings are converted:
+`headingStrategy` オプションで見出しの変換方法を指定できます。
 
-| `headingStrategy` | Behavior                                                                                | Common Use Case                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `"none"`          | Preserves headings as-is without modification                                           | Files already written using `##` and below                                                    |
-| `"demote"`        | Demotes all heading levels by 1 (e.g. H1 → H2; applies even if the file contains no H1) | Treating a topic-level H1 (like `# Context7`) as a section (H2) in the combined document      |
-| `"drop"`          | Drops only the leading H1 line (does nothing if the file does not start with an H1)     | Omitting standalone document titles (like `# Common Instructions`) from the combined document |
+| `headingStrategy` | 動作                                                                   | 主なユースケース                                                            |
+| ----------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `"none"`          | 見出しを変換せず、そのまま維持する                                     | もともと `##` 以下で構造化されているファイル                                |
+| `"demote"`        | すべての見出しレベルを 1 段下げる（H1 を含まないファイルでも適用）     | `# Context7` のようなトピック単位の H1 をセクション（H2）として残したい場合 |
+| `"drop"`          | ファイル先頭の H1 行のみを除去する（先頭が H1 でない場合は何もしない） | `# 共通指示` のような単体ドキュメント用のタイトル H1 が不要な場合           |
 
 > [!NOTE]
-> Only ATX-style headings (`# ` syntax) outside code fences are transformed. Setext-style headings (underlined with `===` or `---`) are not supported.
+> 変換の対象となるのは、コードフェンスの外にある ATX 形式（`#` で始まる行）の見出しのみです。Setext 形式（行の下に `===` や `---` を置く記法）には対応していません。
 
 <table>
   <tr>
-    <th>Input</th>
+    <th>入力</th>
     <th><code>"none"</code></th>
     <th><code>"demote"</code></th>
     <th><code>"drop"</code></th>
@@ -186,21 +182,21 @@ Fetch the latest docs.
 
 ### `insertH1`
 
-Set `insertH1.enable = true` to automatically insert an H1 heading at the top of the generated file.
+生成ファイルの先頭に H1 見出しを自動挿入する場合は、`insertH1.enable = true` を指定します。
 
-If `insertH1.text` is omitted, the base filename of the destination `dest` (such as `CLAUDE.md` or `.goosehints`) is used as the heading text.
+`insertH1.text` を省略した場合は、配置先（`dest`）のファイル名（`CLAUDE.md` や `.goosehints` など）が見出し文字列として自動的に使われます。
 
-You can override the shared setting per target using `targets.<name>.insertH1`. If H1 insertion is disabled (default), the first heading from the source Markdown files will serve as the document's top-level heading.
+ターゲットごとに `targets.<name>.insertH1` を定義すると、共通設定を上書きできます。H1 の挿入を無効（デフォルト）にしている場合は、先頭の Markdown ファイルに含まれる見出しがそのままドキュメントのトップレベル見出しになります。
 
 ```nix
 {
   insertH1.enable = true;
   targets = {
 
-    # Output: `# CLAUDE.md`
+    # 出力結果: `# CLAUDE.md`
     claude.enable = true;
 
-    # Output: `# Codex Instructions`
+    # 出力結果: `# Codex Instructions`
     codex = {
       enable = true;
       insertH1 = {
@@ -212,38 +208,36 @@ You can override the shared setting per target using `targets.<name>.insertH1`. 
 }
 ```
 
-## Options
+## オプション
 
-All options are configured under `programs.agent-instructions`.
-
-| Option                          | Type                       | Default | Description                                                                                            |
-| ------------------------------- | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `enable`                        | boolean                    | `false` | Enable the module.                                                                                     |
-| `sources`                       | list of (path or `Source`) | `[ ]`   | List of shared Markdown files across all targets, concatenated in the specified order.                 |
-| `insertH1`                      | `H1`                       | `{ }`   | Configuration for inserting an H1 heading at the top of each target file.                              |
-| `targets.<name>.enable`         | boolean                    | `false` | Generate and deploy instructions for this target agent.                                                |
-| `targets.<name>.dest`           | null or string             | `null`  | Relative path from `$HOME`. If `null`, uses the predefined default path (required for custom targets). |
-| `targets.<name>.sources`        | list of (path or `Source`) | `[ ]`   | Additional Markdown files to append after shared `sources`.                                            |
-| `targets.<name>.inheritSources` | boolean                    | `true`  | When set to `false`, do not inherit shared `sources`.                                                  |
-| `targets.<name>.insertH1`       | null or `H1`               | `null`  | Target-specific `insertH1` settings. If `null`, inherits the shared `insertH1` configuration.          |
+| オプション                      | 型                         | 既定値  | 説明                                                                                    |
+| ------------------------------- | -------------------------- | ------- | --------------------------------------------------------------------------------------- |
+| `enable`                        | boolean                    | `false` | モジュールを有効化する                                                                  |
+| `sources`                       | list of (path or `Source`) | `[ ]`   | 全ターゲット共通の Markdown ファイル一覧。指定順に結合されます                          |
+| `insertH1`                      | `H1`                       | `{ }`   | 各ターゲットファイルの先頭に挿入する H1 見出しの設定                                    |
+| `targets.<name>.enable`         | boolean                    | `false` | このターゲットの指示ファイルを生成・配置する                                            |
+| `targets.<name>.dest`           | null or string             | `null`  | `$HOME` からの相対パス。`null` の場合は既定の配置先を使用（カスタムターゲットでは必須） |
+| `targets.<name>.sources`        | list of (path or `Source`) | `[ ]`   | 共通 `sources` の末尾に追加で結合する Markdown ファイル                                 |
+| `targets.<name>.inheritSources` | boolean                    | `true`  | `false` にすると共通の `sources` を継承しない                                           |
+| `targets.<name>.insertH1`       | null or `H1`               | `null`  | このターゲット専用の `insertH1` 設定。`null` の場合は共通の `insertH1` 設定を使用       |
 
 ### `Source`
 
-| Option            | Type                                  | Default         | Description                                                                                               |
-| ----------------- | ------------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
-| `path`            | path                                  | None (required) | Path to the Markdown file to include.                                                                     |
-| `headingStrategy` | one of `"none"`, `"demote"`, `"drop"` | `"none"`        | Heading conversion rule. See [Markdown Composition and Formatting](#markdown-composition-and-formatting). |
+| オプション        | 型                                    | 既定値       | 説明                                                                       |
+| ----------------- | ------------------------------------- | ------------ | -------------------------------------------------------------------------- |
+| `path`            | path                                  | なし（必須） | 読み込む Markdown ファイルのパス                                           |
+| `headingStrategy` | one of `"none"`, `"demote"`, `"drop"` | `"none"`     | 見出しの変換ルール。[Markdown の結合と整形](#markdown-の結合と整形) を参照 |
 
 ### `H1`
 
-| Option   | Type           | Default | Description                                                    |
-| -------- | -------------- | ------- | -------------------------------------------------------------- |
-| `enable` | boolean        | `false` | Enable inserting an H1 heading at the top.                     |
-| `text`   | null or string | `null`  | Heading text string. If `null`, uses the filename from `dest`. |
+| オプション | 型             | 既定値  | 説明                                                      |
+| ---------- | -------------- | ------- | --------------------------------------------------------- |
+| `enable`   | boolean        | `false` | 先頭への H1 見出し挿入を有効化する                        |
+| `text`     | null or string | `null`  | 見出しの文字列。`null` の場合は `dest` のファイル名を使用 |
 
-## Targets & Default Paths
+## ターゲットと既定の配置先
 
-| Name           | `dest`                             | Conflicting Home Manager Option       | Source / Reference                                                                                                                                                                                                                                        |
+| 名前           | `dest`                             | 競合する Home Manager のオプション    | 出典                                                                                                                                                                                                                                                      |
 | -------------- | ---------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agents`       | `.agents/AGENTS.md`                | -                                     | [Cline](https://github.com/cline/cline/blob/main/sdk/packages/shared/src/storage/paths.ts), [Droid](https://docs.factory.com/cli/configuration/agents-md), [Kimi Code](https://github.com/MoonshotAI/kimi-code/blob/main/docs/en/customization/agents.md) |
 | `agentty`      | `.agentty/AGENTS.md`               | -                                     | [agentty](https://github.com/1ay1/agentty)                                                                                                                                                                                                                |
@@ -282,11 +276,11 @@ All options are configured under `programs.agent-instructions`.
 | `zcode`        | `.zcode/AGENTS.md`                 | -                                     | [Z Code](https://zcode.z.ai/en/docs/agents)                                                                                                                                                                                                               |
 
 > [!NOTE]
-> `dest` paths are resolved statically at Nix evaluation time. If you customize config directories using environment variables (such as `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `XDG_CONFIG_HOME`), they will not be detected automatically; please specify `dest` explicitly.
+> `dest` は Nix の評価時に静的に決定されます。`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`XDG_CONFIG_HOME` などの環境変数で設定ディレクトリを変更している場合は自動反映されないため、`dest` を明示的に指定してください。
 
-### Custom Targets
+### カスタムターゲット
 
-You can add any unlisted tool by giving it a custom target name and specifying `dest` as a relative path from `$HOME`:
+一覧にないツールでも、任意のターゲット名と `$HOME` からの相対パス（`dest`）を指定して自由に追加できます。
 
 ```nix
 programs.agent-instructions.targets.my-agent = {
@@ -297,9 +291,9 @@ programs.agent-instructions.targets.my-agent = {
 # → ~/.my-agent/RULES.md
 ```
 
-## Using Core API Directly
+## コア API を直接利用する
 
-If you are not using Home Manager, you can build the bundle derivation directly with the core library functions and deploy files to `$HOME` using any method you prefer. The function arguments mirror Home Manager module options.
+Home Manager を使わずに利用する場合は、ライブラリの関数で直接バンドル（derivation）をビルドし、独自の方法で `$HOME` 配下に配置できます。受け取る引数は Home Manager のモジュールオプションと共通です。
 
 ```nix
 bundle = inputs.agent-instructions.lib.mkBundle {
@@ -310,47 +304,47 @@ bundle = inputs.agent-instructions.lib.mkBundle {
 # → $out/claude.md
 ```
 
-The composed instruction files are generated directly under a single bundle directory as `<name>.md` (e.g. `codex.md` and `claude.md` inside `/nix/store/<hash>-agent-instructions/`). The Home Manager module symlinks from each target's `dest` to its corresponding file inside this bundle. Changing `dest` does not affect the filename inside the bundle.
+各ターゲット向けに結合された Markdown は、1 つのバンドル（ディレクトリ）直下に `<name>.md` として生成されます（例: `/nix/store/<hash>-agent-instructions/` 配下に `codex.md` や `claude.md` が出力されます）。Home Manager モジュールは、各ターゲットの `dest` からバンドル内の対応ファイルへシンボリックリンクを張る仕組みになっています。そのため、`dest` を変更してもバンドル内のファイル名は変わりません。
 
-### API Reference
+### API リファレンス
 
 `mkBundle { pkgs, sources?, insertH1?, targets?, name? }`
 
-- Builds a bundle derivation containing the instruction files for all enabled targets.
-- Validates targets: throws an evaluation error if `checkTargets` detects issues, and reports warnings from `targetWarnings` during evaluation.
+- 各ターゲットの指示ファイルをまとめたバンドル（derivation）を生成します
+- 設定値の検証を行い、`checkTargets` でエラーがあれば評価を中断（throw）し、`targetWarnings` の警告があれば評価時警告（warning）として出力します
 
 `resolveTargets { sources?, insertH1?, targets? }`
 
-- Normalizes input options and resolves enabled targets into `{ <name> = { dest; sources; h1; }; }`.
-- `h1` contains the heading text string to insert, or `null`.
+- 入力設定を正規化し、有効化されたターゲットを `{ <name> = { dest; sources; h1; }; }` の形式に解決します
+- `h1` には挿入対象の見出し文字列、または `null` が格納されます
 
 `checkTargets resolved`
 
-- Validates resolved targets and returns a list of error strings (`[ ]` if valid).
+- 解決済みターゲットの妥当性を検証し、エラーメッセージのリストを返します（問題がなければ空リスト `[ ]`）
 
 `targetWarnings resolved`
 
-- Returns a list of warning strings for resolved targets (`[ ]` if no warnings).
+- 解決済みターゲットの警告メッセージのリストを返します（警告がなければ空リスト `[ ]`）
 
 `compose { sources, h1? }`
 
-- Returns the composed Markdown string after preprocessing and concatenating the given `sources`.
-- Accepts resolved target attribute sets directly.
+- 指定された `sources` を前処理・結合した Markdown 文字列を返します
+- `resolveTargets` で解決したターゲットの attribute set をそのまま渡すことができます
 
 `defaultTargets`
 
-- Attribute set of built-in targets and their default `dest` paths.
+- 組み込みターゲットの定義と既定の `dest` パス一覧
 
-## Development & Testing
+## 開発とテスト
 
 ```bash
-nix flake check        # Core tests (test/core.nix, requires only nixpkgs)
-nix flake check ./dev  # Home Manager integration tests (test/home-manager.nix)
-nix fmt                # Format code with nixfmt
+nix flake check        # コア機能のテスト（test/core.nix、nixpkgs のみで実行可能）
+nix flake check ./dev  # Home Manager 連携モジュールのテスト（test/home-manager.nix）
+nix fmt                # nixfmt によるコードフォーマット
 ```
 
-## License
+## ライセンス
 
 Copyright 2026 koutyuke
 
-Licensed under the [MIT License](./LICENSE).
+本リポジトリは [MIT License](./LICENSE) のもとで公開されています。
