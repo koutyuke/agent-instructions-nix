@@ -10,13 +10,13 @@ let
   mkBundle =
     {
       pkgs,
-      fragments ? [ ],
+      sources ? [ ],
       insertH1 ? { },
       targets ? { },
       name ? "agent-instructions",
     }:
     let
-      resolved = resolveTargets { inherit fragments insertH1 targets; };
+      resolved = resolveTargets { inherit sources insertH1 targets; };
       errors = checkTargets resolved;
     in
     if errors != [ ] then

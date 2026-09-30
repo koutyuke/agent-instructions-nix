@@ -46,7 +46,7 @@ let
   withTargets = targets: {
     programs.agent-instructions = {
       enable = true;
-      fragments = [
+      sources = [
         ./fixtures/COMMON.md
         ./fixtures/TOOL.md
       ];
@@ -58,7 +58,7 @@ let
     claude.enable = true;
     codex = {
       enable = true;
-      fragments = [ ./fixtures/CODEX.md ];
+      sources = [ ./fixtures/CODEX.md ];
     };
   });
 in
@@ -83,7 +83,7 @@ in
         programs.agent-instructions = {
           enable = true;
           insertH1.enable = true;
-          fragments = [
+          sources = [
             {
               path = ./fixtures/RULE.md;
               headingStrategy = "drop";

@@ -15,14 +15,14 @@ let
   cfg = config.programs.agent-instructions;
 
   args = {
-    inherit (cfg) fragments insertH1;
+    inherit (cfg) sources insertH1;
     targets = lib.mapAttrs (_: t: removeAttrs t [ "_module" ]) cfg.targets;
   };
   resolved = core.resolveTargets args;
   errors = core.checkTargets resolved;
   bundle = core.mkBundle (args // { inherit pkgs; });
 
-  fragmentType = types.coercedTo types.path (path: { inherit path; }) (
+  sourceType = types.coercedTo types.path (path: { inherit path; }) (
     types.submodule {
       options = {
         path = mkOption {
@@ -38,7 +38,7 @@ let
           ];
           default = "none";
           description = ''
-            How to treat the fragment's headings. `demote` moves every heading one
+            How to treat the source's headings. `demote` moves every heading one
             level down and `drop` removes an H1 that comes first.
           '';
         };
@@ -72,10 +72,10 @@ let
           description = "Destination path relative to the home directory. Built-in targets default to their known path.";
         };
 
-        fragments = mkOption {
-          type = types.listOf fragmentType;
+        sources = mkOption {
+          type = types.listOf sourceType;
           default = [ ];
-          description = "Fragments appended after the common fragments for this target.";
+          description = "Sources appended after the inherited sources for this target.";
         };
 
         insertH1 = mkOption {
@@ -84,10 +84,10 @@ let
           description = "Overrides {option}`programs.agent-instructions.insertH1` for this target.";
         };
 
-        inheritCommon = mkOption {
+        inheritSources = mkOption {
           type = types.bool;
           default = true;
-          description = "Whether to prepend {option}`programs.agent-instructions.fragments`.";
+          description = "Whether to prepend {option}`programs.agent-instructions.sources` to this target's sources.";
         };
       };
     };
@@ -96,8 +96,8 @@ in
   options.programs.agent-instructions = {
     enable = lib.mkEnableOption "declarative global instructions for AI coding agents";
 
-    fragments = mkOption {
-      type = types.listOf fragmentType;
+    sources = mkOption {
+      type = types.listOf sourceType;
       default = [ ];
       example = lib.literalExpression ''
         [
@@ -105,7 +105,7 @@ in
           { path = ./rules/context7.md; headingStrategy = "demote"; }
         ]
       '';
-      description = "Markdown fragments shared by every target, concatenated in order. A path or `{ path; headingStrategy; }`.";
+      description = "Markdown files shared by every target, concatenated in order. A path or `{ path; headingStrategy; }`.";
     };
 
     insertH1 = mkOption {

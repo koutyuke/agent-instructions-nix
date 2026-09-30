@@ -11,19 +11,19 @@ let
   rule = ./fixtures/RULE.md;
 
   resolved = core.resolveTargets {
-    fragments = common;
+    sources = common;
     targets = {
       claude.enable = true;
       codex = {
         enable = true;
-        fragments = [ ./fixtures/CODEX.md ];
+        sources = [ ./fixtures/CODEX.md ];
       };
       opencode.enable = false;
       custom = {
         enable = true;
         dest = ".custom/RULES.md";
-        inheritCommon = false;
-        fragments = [ ./fixtures/CODEX.md ];
+        inheritSources = false;
+        sources = [ ./fixtures/CODEX.md ];
       };
     };
   };
@@ -32,14 +32,14 @@ let
     targets:
     core.checkTargets (
       core.resolveTargets {
-        fragments = common;
+        sources = common;
         inherit targets;
       }
     );
   hasError = needle: targets: lib.any (lib.hasInfix needle) (errorsFor targets);
 
-  textOf = fragments: core.compose { inherit fragments; };
-  # Composed text and targetWarnings for the same fragments.
+  textOf = sources: core.compose { inherit sources; };
+  # Composed text and targetWarnings for the same sources.
   composeWith = t: {
     text = core.compose t;
     warnings = core.targetWarnings {
@@ -56,7 +56,7 @@ let
     lib.mapAttrs (_: t: t.h1) (
       core.resolveTargets (
         {
-          fragments = common;
+          sources = common;
         }
         // args
       )
@@ -64,7 +64,7 @@ let
 
   bundle = core.mkBundle {
     inherit pkgs;
-    fragments = [
+    sources = [
       {
         path = ./fixtures/COMMON.md;
         headingStrategy = "demote";
@@ -76,7 +76,7 @@ let
       claude.enable = true;
       codex = {
         enable = true;
-        fragments = [ ./fixtures/CODEX.md ];
+        sources = [ ./fixtures/CODEX.md ];
       };
       goose.enable = true;
     };
@@ -87,18 +87,18 @@ in
     resolved.claude.dest == ".claude/CLAUDE.md"
   );
 
-  core-composes-common-fragments = mkCheck "core-composes-common-fragments" (
+  core-composes-common-sources = mkCheck "core-composes-common-sources" (
     core.compose resolved.claude == "# Common\n\n## Tool\n"
   );
 
-  core-appends-target-fragments = mkCheck "core-appends-target-fragments" (
+  core-appends-target-sources = mkCheck "core-appends-target-sources" (
     core.compose resolved.codex == "# Common\n\n## Tool\n\n## Codex\n"
   );
 
   core-custom-target-without-common = mkCheck "core-custom-target-without-common" (
     resolved.custom == {
       dest = ".custom/RULES.md";
-      fragments = [ ./fixtures/CODEX.md ];
+      sources = [ ./fixtures/CODEX.md ];
       h1 = null;
     }
   );
@@ -114,10 +114,10 @@ in
   );
 
   core-rejects-empty-target = mkCheck "core-rejects-empty-target" (
-    hasError "no fragments" {
+    hasError "no sources" {
       claude = {
         enable = true;
-        inheritCommon = false;
+        inheritSources = false;
       };
     }
   );
@@ -159,7 +159,7 @@ in
   core-demote-warns-beyond-h6 =
     let
       c = composeWith {
-        fragments = [
+        sources = [
           {
             path = builtins.toFile "h6.md" "###### Six\n";
             headingStrategy = "demote";
@@ -174,7 +174,7 @@ in
   core-drops-leading-h1 =
     let
       c = composeWith {
-        fragments = [
+        sources = [
           {
             path = rule;
             headingStrategy = "drop";
@@ -192,7 +192,7 @@ in
   core-drop-warns-on-preface =
     let
       c = composeWith {
-        fragments = [
+        sources = [
           {
             path = builtins.toFile "preface.md" "# Title\n\ncontents\n\n## H2\n";
             headingStrategy = "drop";
@@ -208,7 +208,7 @@ in
     let
       c = composeWith {
         h1 = "CLAUDE.md";
-        fragments = [ ./fixtures/COMMON.md ];
+        sources = [ ./fixtures/COMMON.md ];
       };
     in
     mkCheck "core-warns-multiple-h1" (
@@ -221,7 +221,7 @@ in
   core-closes-unclosed-fence =
     let
       c = composeWith {
-        fragments = [
+        sources = [
           {
             path = builtins.toFile "unclosed.md" "# A\n\n````md\n```\n# x\n";
             headingStrategy = "demote";
@@ -235,12 +235,12 @@ in
       && lib.any (lib.hasInfix "not closed") c.warnings
     );
 
-  # Report shared fragment warnings once, but duplicate H1 warnings per target.
+  # Report shared source warnings once, but duplicate H1 warnings per target.
   core-target-warnings-are-deduplicated =
     let
       warnings = core.targetWarnings (
         core.resolveTargets {
-          fragments = [
+          sources = [
             (builtins.toFile "unclosed-shared.md" "```\n")
             ./fixtures/COMMON.md
           ];
@@ -316,7 +316,7 @@ in
     }
   );
 
-  # Trim blank lines around fragments and separate them with one blank line.
+  # Trim blank lines around sources and separate them with one blank line.
   core-normalizes-blank-lines = mkCheck "core-normalizes-blank-lines" (
     textOf [
       (builtins.toFile "padded.md" "\n  \n## Padded\n\n\n")

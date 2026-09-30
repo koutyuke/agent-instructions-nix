@@ -1,13 +1,13 @@
 { lib, defaultTargets }:
 let
-  # Enabled targets as `{ <name> = { dest; fragments; h1; }; }`, with built-in
-  # dests filled in and common fragments prepended unless inheritCommon = false.
+  # Enabled targets as `{ <name> = { dest; sources; h1; }; }`, with built-in
+  # dests filled in and top-level sources prepended unless inheritSources = false.
   # `dest` is null when neither the target nor a built-in provides one.
   # `h1` is the heading text to insert, or null; a target's `insertH1` replaces
   # the common one, and a null `text` falls back to the dest's file name.
   resolveTargets =
     {
-      fragments ? [ ],
+      sources ? [ ],
       insertH1 ? { },
       targets ? { },
     }:
@@ -19,7 +19,7 @@ let
       in
       {
         inherit dest;
-        fragments = lib.optionals (t.inheritCommon or true) fragments ++ t.fragments or [ ];
+        sources = lib.optionals (t.inheritSources or true) sources ++ t.sources or [ ];
         h1 =
           if !(h1.enable or false) then
             null
@@ -42,7 +42,7 @@ let
       lib.mapAttrsToList (
         name: t:
         lib.optional (t.dest == null) "targets.${name}: dest is not set."
-        ++ lib.optional (t.fragments == [ ]) "targets.${name}: no fragments to write."
+        ++ lib.optional (t.sources == [ ]) "targets.${name}: no sources to write."
       ) resolved
     )
     ++ lib.optional (

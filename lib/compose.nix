@@ -65,14 +65,14 @@ let
         lines = [ ];
       };
 
-  # A fragment is a path, or `{ path; headingStrategy ? "none"; }`. "demote"
+  # A source is a path, or `{ path; headingStrategy ? "none"; }`. "demote"
   # moves every heading one level down and "drop" removes a leading H1. Front
   # matter is always removed, an unclosed code fence is closed at the end, and
   # blank lines are collapsed outside code blocks.
-  readFragment =
-    fragment:
+  readSource =
+    source:
     let
-      f = if lib.isStringLike fragment then { path = fragment; } else fragment;
+      f = if lib.isStringLike source then { path = source; } else source;
       strategy = f.headingStrategy or "none";
       raw = map (lib.removeSuffix "\r") (
         lib.splitString "\n" (lib.removePrefix bom (builtins.readFile f.path))
@@ -130,28 +130,28 @@ let
       warnings = map (w: "${toString f.path}: ${w}") (
         lib.optional (
           scanned.fence != null
-        ) "code fence is not closed; closed it at the end of the fragment."
+        ) "code fence is not closed; closed it at the end of the source."
         ++ lib.optional tooDeep "a heading goes deeper than H6 after demote; written as \"#######\"."
         ++ lib.optional hasPreface "content after the dropped H1 now continues the preceding section."
       );
     };
 
-  # Composes `{ h1 ? null; fragments; }` (a resolved target works as is). The H1
-  # comes first, non-empty fragments are separated by one blank line, and the
+  # Composes `{ h1 ? null; sources; }` (a resolved target works as is). The H1
+  # comes first, non-empty sources are separated by one blank line, and the
   # text ends with a newline.
   compose =
     {
       h1 ? null,
-      fragments,
+      sources,
       ...
     }:
     lib.concatMapStringsSep "\n" (s: s + "\n") (
       lib.optional (h1 != null) "# ${h1}"
-      ++ lib.filter (s: s != "") (map (f: (readFragment f).text) fragments)
+      ++ lib.filter (s: s != "") (map (f: (readSource f).text) sources)
     );
 
   # Warning messages for resolved targets; empty when the content is clean.
-  # Fragment warnings are reported once even when targets share the fragment.
+  # Source warnings are reported once even when targets share the source.
   targetWarnings =
     resolved:
     lib.unique (
@@ -159,13 +159,13 @@ let
         lib.mapAttrsToList (
           name: t:
           let
-            read = map readFragment t.fragments;
+            read = map readSource t.sources;
             h1Count = lib.count (x: x != null) [ t.h1 ] + lib.foldl' (n: r: n + r.h1Count) 0 read;
           in
           lib.concatMap (r: r.warnings) read
           ++
             lib.optional (h1Count > 1)
-              "targets.${name}: the output has multiple H1 headings; set headingStrategy = \"demote\" or \"drop\" on fragments, or disable insertH1."
+              "targets.${name}: the output has multiple H1 headings; set headingStrategy = \"demote\" or \"drop\" on sources, or disable insertH1."
         ) resolved
       )
     );
