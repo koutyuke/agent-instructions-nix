@@ -1,0 +1,23 @@
+[
+  { "name": "T-Epic", "color": "1d76db", "description": "type: epic - A large initiative spanning multiple issues" },
+  { "name": "T-Feature", "color": "1d76db", "description": "type: feature - Add a new feature" },
+  { "name": "T-Enhancement", "color": "1d76db", "description": "type: enhancement - Improve an existing feature" },
+  { "name": "T-Bug", "color": "b60205", "description": "type: bug - Report or fix a defect" },
+  { "name": "T-Refactor", "color": "1d76db", "description": "type: refactor - Restructure code without changing behavior" },
+  { "name": "T-Test", "color": "1d76db", "description": "type: test - Add or improve tests" },
+  { "name": "T-Documentation", "color": "1d76db", "description": "type: documentation - Create or update documentation" },
+  { "name": "T-Chore", "color": "1d76db", "description": "type: chore - Dependencies, configuration, or maintenance" },
+  { "name": "A-Core", "color": "0e8a16", "description": "area: core - lib and the Nix core API" },
+  { "name": "A-HomeManager", "color": "0e8a16", "description": "area: home-manager - Home Manager module" },
+  { "name": "A-Docs", "color": "0e8a16", "description": "area: docs - README and examples" },
+  { "name": "A-Infra", "color": "0e8a16", "description": "area: infra - CI, flakes, and test infrastructure" },
+  { "name": "P-Critical", "color": "c2185b", "description": "priority: critical - Immediate action required" },
+  { "name": "P-High", "color": "e91e63", "description": "priority: high - High priority" },
+  { "name": "P-Medium", "color": "f06292", "description": "priority: medium - Medium priority" },
+  { "name": "P-Low", "color": "f8bbd0", "description": "priority: low - Low priority" },
+  { "name": "X-Blocked", "color": "d93f0b", "description": "status: blocked - Waiting on another task or external factor" },
+  { "name": "X-NeedsDecision", "color": "fbca04", "description": "status: needs decision - Waiting on an unresolved decision" },
+  { "name": "duplicate", "color": "cfd3d7", "description": "Duplicates an existing issue or pull request" },
+  { "name": "invalid", "color": "e4e669", "description": "Incorrect or outside the project scope" },
+  { "name": "wontfix", "color": "ffffff", "description": "Will not be addressed" }
+]
