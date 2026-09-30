@@ -39,7 +39,7 @@ let
   hasError = needle: targets: lib.any (lib.hasInfix needle) (errorsFor targets);
 
   textOf = fragments: core.compose { inherit fragments; };
-  # 本文と、同じ断片について targetWarnings が返す警告。
+  # Composed text and targetWarnings for the same fragments.
   composeWith = t: {
     text = core.compose t;
     warnings = core.targetWarnings {
@@ -145,7 +145,7 @@ in
     ] == "## Rule\n\n### Rule body\n"
   );
 
-  # demote は H1 がなくても下げ、コードフェンスの中は変えない。
+  # demote shifts headings even without an H1, but leaves code fences unchanged.
   core-demote-skips-code-fences = mkCheck "core-demote-skips-code-fences" (
     textOf [
       ./fixtures/TOOL.md
@@ -188,7 +188,7 @@ in
     in
     mkCheck "core-drops-leading-h1" (c.text == "## Rule body\n\n## Tool\n" && c.warnings == [ ]);
 
-  # H1 の直後の本文は残し、前の節に混ざることを警告する。
+  # Keep text after the H1 and warn that it may merge with the preceding section.
   core-drop-warns-on-preface =
     let
       c = composeWith {
@@ -217,7 +217,7 @@ in
       && core.targetWarnings resolved == [ ]
     );
 
-  # 閉じていないフェンスは開始と同じ記号と長さで閉じ、その中の見出しは変えない。
+  # Close an unclosed fence with the same marker and length, leaving headings inside unchanged.
   core-closes-unclosed-fence =
     let
       c = composeWith {
@@ -235,7 +235,7 @@ in
       && lib.any (lib.hasInfix "not closed") c.warnings
     );
 
-  # 断片の警告はターゲットをまたいで 1 回にまとめ、H1 の重複はターゲットごとに報告する。
+  # Report shared fragment warnings once, but duplicate H1 warnings per target.
   core-target-warnings-are-deduplicated =
     let
       warnings = core.targetWarnings (
@@ -316,7 +316,7 @@ in
     }
   );
 
-  # 断片の前後の空行を除き、断片の間は空行 1 つにそろえる。
+  # Trim blank lines around fragments and separate them with one blank line.
   core-normalizes-blank-lines = mkCheck "core-normalizes-blank-lines" (
     textOf [
       (builtins.toFile "padded.md" "\n  \n## Padded\n\n\n")
@@ -326,7 +326,7 @@ in
     ] == "## Padded\n\n## No newline\n\n## Tool\n"
   );
 
-  # 本文を一つのバンドル直下にまとめる。
+  # Collect the composed text directly in one bundle.
   core-bundle-contains-files = pkgs.runCommand "agent-instructions-core-bundle-contains-files" { } ''
     test "$(head -n 1 ${bundle}/claude.md)" = '# CLAUDE.md'
     test -z "$(sed -n 2p ${bundle}/claude.md)"
